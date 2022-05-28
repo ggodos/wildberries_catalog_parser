@@ -128,13 +128,13 @@ def create_driver():
 
 def main():
     url = input("Enter wildberries catalog url: ")
-    filename = input("Enter filename: ")
-    directory = os.getcwd() + "/target/"
-    if not os.path.exists(directory):
-        os.mkdir(directory)
-    filename = f"{directory}{filename}"
-    fullname = f"{filename}-full.json"
-    idsname = f"{filename}-ids.json"
+    filepath = input("Enter filename: ")
+    dump_directory = os.path.dirname(os.path.realpath(__file__)) + "/target/"
+    if not os.path.exists(dump_directory):
+        os.mkdir(dump_directory)
+    filepath = f"{dump_directory}{filepath}"
+    fullname = f"{filepath}-full.json"
+    idsname = f"{filepath}-ids.json"
 
     driver = create_driver()
     soup = getSoup(url, driver)

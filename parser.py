@@ -1,4 +1,5 @@
 from selenium import webdriver
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver import firefox
 from selenium.webdriver import chrome
 from selenium.webdriver.support.wait import WebDriverWait
@@ -55,14 +56,13 @@ def parse_product_data(product: str):
 
 
 def getSoup(url, driver, delay=15):
-    # Fetch
     print("Start fetching data...")
     driver.get(url)
     try:
         WebDriverWait(driver, delay).until(
             EC.element_to_be_clickable((By.ID, 'filters')))
-    except:
-        print("Error of loading")
+    except TimeoutException as ex:
+        print("Timeout exception")
 
     soup = BeautifulSoup(driver.page_source, features="lxml")
 
@@ -94,7 +94,7 @@ def parseSoup(soup: BeautifulSoup, element_class="product-card j-card-item j-goo
 
 
 def dumpData(filename: str, data):
-    with open(filename, "w") as fp:
+    with open(filename, "w", encoding="utf-8") as fp:
         fp.write(json.dumps(data, ensure_ascii=False, sort_keys=True, indent=4))
 
 
@@ -114,16 +114,17 @@ def create_driver():
             continue
         a = browsers[n-1]
     if a == "firefox":
-        opts = firefox.options.Options() # pyright:ignore
+        opts = firefox.options.Options()  # pyright:ignore
         opts.headless = True
         return webdriver.Firefox(service=firefox.service.Service(  # pyright:ignore
             GeckoDriverManager().install()), options=opts)
     elif a == "chrome":
-        opts = chrome.options.Options() # pyright:ignore
+        opts = chrome.options.Options()  # pyright:ignore
         opts.headless = True
         return webdriver.Chrome(service=chrome.service.Service(  # pyright:ignore
             ChromeDriverManager().install()), options=opts)
     raise Exception("No driver used")
+
 
 def main():
     url = input("Enter wildberries catalog url: ")

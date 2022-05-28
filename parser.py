@@ -1,10 +1,11 @@
 from selenium import webdriver
-from selenium.webdriver.firefox.options import Options
-from selenium.webdriver.firefox.service import Service
+from selenium.webdriver import firefox
+from selenium.webdriver import chrome
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.firefox import GeckoDriverManager
+from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
 import re
 import os
@@ -13,7 +14,7 @@ import sys
 import string
 
 
-os.environ["GH_TOKEN"] = "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"
+os.environ["GH_TOKEN"] = "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"
 
 
 def pretty_price(inp_price) -> str:
@@ -53,14 +54,7 @@ def parse_product_data(product: str):
     return result
 
 
-def getSoup(url, delay=15):
-    print("Create driver...")
-    # Options
-    opts = Options()
-    opts.headless = True
-    driver = webdriver.Firefox(service=Service(  # pyright:ignore
-        GeckoDriverManager().install()), options=opts)
-
+def getSoup(url, driver, delay=15):
     # Fetch
     print("Start fetching data...")
     driver.get(url)
@@ -104,6 +98,33 @@ def dumpData(filename: str, data):
         fp.write(json.dumps(data, ensure_ascii=False, sort_keys=True, indent=4))
 
 
+def create_driver():
+    print("Create driver...")
+    # Options
+    browsers = ["firefox", "chrome"]
+    a = ""
+    while a not in browsers:
+        inp = input("Select browser: \n 1. firefox\n 2. chrome\n ::")
+        if not inp.isdigit():
+            print("Input must be number.")
+            continue
+        n = int(inp)
+        if n not in [i+1 for i in range(0, len(browsers))]:
+            print("Out of range number")
+            continue
+        a = browsers[n-1]
+    if a == "firefox":
+        opts = firefox.options.Options() # pyright:ignore
+        opts.headless = True
+        return webdriver.Firefox(service=firefox.service.Service(  # pyright:ignore
+            GeckoDriverManager().install()), options=opts)
+    elif a == "chrome":
+        opts = chrome.options.Options() # pyright:ignore
+        opts.headless = True
+        return webdriver.Chrome(service=chrome.service.Service(  # pyright:ignore
+            ChromeDriverManager().install()), options=opts)
+    raise Exception("No driver used")
+
 def main():
     url = input("Enter wildberries catalog url: ")
     filename = input("Enter filename: ")
@@ -114,13 +135,14 @@ def main():
     fullname = f"{filename}-full.json"
     idsname = f"{filename}-ids.json"
 
-    soup = getSoup(url)
-    results = parseSoup(
+    driver = create_driver()
+    soup = getSoup(url, driver)
+    products = parseSoup(
         soup, "product-card j-card-item j-good-for-listing-event")
     print(f"Writing fulldata in {os.path.basename(fullname)}" +
-          f"and only id's in {os.path.basename(idsname)}")
-    dumpData(fullname, results)
-    ids = [item["id"] for item in results]
+          f" and only id's in {os.path.basename(idsname)}")
+    dumpData(fullname, products)
+    ids = [item["id"] for item in products]
     dumpData(idsname, ids)
 
 

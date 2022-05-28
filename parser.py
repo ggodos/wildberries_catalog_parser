@@ -38,14 +38,14 @@ def parse_product_data(product: str):
     soup = BeautifulSoup(product, features="lxml")
     low_price = soup.find(attrs={"class": "lower-price"})
     if low_price is not None:
-        result["lower-price"] = \
+        result["current-price"] = \
             pretty_price(low_price.contents[0])  # pyright:ignore
     old_price = soup.find(attrs={"class": "price-old-block"})
     if old_price is not None:
-        result["old_price"] = pretty_old(old_price)
+        result["old-price"] = pretty_old(old_price)
     img = soup.find(name="img")
     if img is not None:
-        result["img"] = img.attrs["src"][2:]  # pyright:ignore
+        result["image"] = img.attrs["src"][2:]  # pyright:ignore
     goods_name = soup.find(attrs={"class": "goods-name"})
     if goods_name is not None:
         result["goods-name"] = goods_name.contents[0]  # pyright:ignore

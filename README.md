@@ -1,4 +1,4 @@
-# This is wildberries.com catalog parser
+# This is wildberries.ru catalog parser
 
 # prerequisites
     pip install -r requirements.txt

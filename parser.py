@@ -1,62 +1,66 @@
+import json
+import os
+import re
+import string
+import sys
+
+from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver import firefox
 from selenium.webdriver import chrome
-from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.firefox import GeckoDriverManager
+from selenium.webdriver.support.wait import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
-from bs4 import BeautifulSoup
-import re
-import os
-import json
-import sys
-import string
+from webdriver_manager.firefox import GeckoDriverManager
 
 
 os.environ["GH_TOKEN"] = "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"
 
 
-def pretty_price(inp_price) -> str:
-    stripped = inp_price.strip()
-    price = ''.join([c if c in string.digits else '' for c in stripped])
-    return price + stripped[-1]
+def prettify_price(inp_price) -> str:
+    stripped_price = inp_price.strip()
+    price = ''.join([c if c in string.digits else '' for c in stripped_price])
+    return price + stripped_price[-1]
 
 
-def pretty_old(old_price) -> str:
+def prettify_old(old_price):
     del_price = str(old_price.contents[1])
     old = re.search("<del>(.+)</del>", del_price)
     if old is None:
         return ""
     old = old.group(1)
-    return pretty_price(old)
+    return prettify_price(old)
 
 
 def parse_product_data(product: str):
     result = dict()
     soup = BeautifulSoup(product, features="lxml")
+
     low_price = soup.find(attrs={"class": "lower-price"})
     if low_price is not None:
-        result["current-price"] = \
-            pretty_price(low_price.contents[0])  # pyright:ignore
+        result["current-price"] = prettify_price(low_price.contents[0])
+
     old_price = soup.find(attrs={"class": "price-old-block"})
     if old_price is not None:
-        result["old-price"] = pretty_old(old_price)
+        result["old-price"] = prettify_old(old_price)
+
     img = soup.find(name="img")
     if img is not None:
-        result["image"] = img.attrs["src"][2:]  # pyright:ignore
+        result["image"] = img.attrs["src"][2:]
+
     goods_name = soup.find(attrs={"class": "goods-name"})
     if goods_name is not None:
-        result["goods-name"] = goods_name.contents[0]  # pyright:ignore
+        result["goods-name"] = goods_name.contents[0]
+
     brand_name = soup.find(attrs={"class": "brand-name"})
     if brand_name is not None:
         result["brand-name"] = brand_name.contents[0]  # pyright:ignore
     return result
 
 
-def getSoup(url, driver, delay=15):
-    print("Start fetching data...")
+def get_catalog_soup(url: str, driver, delay=10) -> BeautifulSoup:
     driver.get(url)
     try:
         WebDriverWait(driver, delay).until(
@@ -70,37 +74,46 @@ def getSoup(url, driver, delay=15):
     return soup
 
 
-def parseSoup(soup: BeautifulSoup, element_class="product-card j-card-item j-good-for-listing-event"):
-    print("Start parsing...")
-    products = soup.find_all(attrs={"class": element_class})
-    data = []
-    toolbar_width = len(products)
-
-    # start progress bar
+def progress_bar_start(toolbar_width):
     sys.stdout.write("[%s]" % (" " * toolbar_width))
     sys.stdout.flush()
     sys.stdout.write("\b" * (toolbar_width+1))
+
+
+def progress_bar_cycle():
+    sys.stdout.write("-")
+    sys.stdout.flush()
+
+
+def progress_bar_end():
+    sys.stdout.write("]\n")  # this ends the progress bar
+
+
+def parse_soup(soup: BeautifulSoup):
+    products = soup.find_all(
+        attrs={"class":  "product-card j-card-item j-good-for-listing-event"})
+
+    # start progress bar
+    toolbar_width = len(products)
+    progress_bar_start(toolbar_width)
+
+    data = []
     for product in products:
         to_add = parse_product_data(str(product))
         to_add["id"] = product["id"]
         data.append(to_add)
-
-        sys.stdout.write("-")
-        sys.stdout.flush()
-
-    sys.stdout.write("]\n")  # this ends the progress bar
+        progress_bar_cycle()
+    progress_bar_end()
 
     return data
 
 
-def dumpData(filename: str, data):
+def dump_data(filename: str, data):
     with open(filename, "w", encoding="utf-8") as fp:
         fp.write(json.dumps(data, ensure_ascii=False, sort_keys=True, indent=4))
 
 
 def create_driver():
-    print("Create driver...")
-    # Options
     browsers = ["firefox", "chrome"]
     a = ""
     while a not in browsers:
@@ -126,25 +139,35 @@ def create_driver():
     raise Exception("No driver used")
 
 
-def main():
-    url = input("Enter wildberries catalog url: ")
-    filepath = input("Enter filename: ")
+def get_pathes(filename):
     dump_directory = os.path.dirname(os.path.realpath(__file__)) + "/target/"
     if not os.path.exists(dump_directory):
         os.mkdir(dump_directory)
-    filepath = f"{dump_directory}{filepath}"
+    filepath = f"{dump_directory}{filename}"
     fullname = f"{filepath}-full.json"
     idsname = f"{filepath}-ids.json"
+    return (fullname, idsname)
 
+
+def process_url(url, filename):
+    print("Create driver...")
     driver = create_driver()
-    soup = getSoup(url, driver)
-    products = parseSoup(
-        soup, "product-card j-card-item j-good-for-listing-event")
+    print("Fetching data...")
+    page_soup = get_catalog_soup(url, driver)
+    print("Parse data...")
+    products = parse_soup(page_soup)
+    ids = [item["id"] for item in products]
+    fullname, idsname = get_pathes(filename)
     print(f"Writing fulldata in {os.path.basename(fullname)}" +
           f" and only id's in {os.path.basename(idsname)}")
-    dumpData(fullname, products)
-    ids = [item["id"] for item in products]
-    dumpData(idsname, ids)
+    dump_data(fullname, products)
+    dump_data(idsname, ids)
+
+
+def main():
+    url = input("Enter wildberries catalog url: ")
+    filename = input("Enter filename: ")
+    process_url(url, filename)
 
 
 if __name__ == "__main__":

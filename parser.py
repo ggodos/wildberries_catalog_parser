@@ -3,6 +3,7 @@ import os
 import re
 import string
 import sys
+from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -15,8 +16,9 @@ from selenium.webdriver.support.wait import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.firefox import GeckoDriverManager
 
-
-os.environ["GH_TOKEN"] = "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"
+with open("token.txt", "r") as fp:
+    token = fp.read().strip()
+    os.environ["GH_TOKEN"] = token
 
 
 def prettify_price(inp_price) -> str:
@@ -60,7 +62,7 @@ def parse_product_data(product: str):
     return result
 
 
-def get_catalog_soup(url: str, driver, delay=10) -> BeautifulSoup:
+def get_page_soup(url: str, driver, delay=10) -> BeautifulSoup:
     driver.get(url)
     try:
         WebDriverWait(driver, delay).until(
@@ -69,8 +71,6 @@ def get_catalog_soup(url: str, driver, delay=10) -> BeautifulSoup:
         print("Timeout exception")
 
     soup = BeautifulSoup(driver.page_source, features="lxml")
-
-    driver.close()
     return soup
 
 
@@ -89,7 +89,7 @@ def progress_bar_end():
     sys.stdout.write("]\n")  # this ends the progress bar
 
 
-def parse_soup(soup: BeautifulSoup):
+def get_soup_products(soup: BeautifulSoup):
     products = soup.find_all(
         attrs={"class":  "product-card j-card-item j-good-for-listing-event"})
 
@@ -113,10 +113,10 @@ def dump_data(filename: str, data):
         fp.write(json.dumps(data, ensure_ascii=False, sort_keys=True, indent=4))
 
 
-def create_driver():
+def select_driver_name():
     browsers = ["firefox", "chrome"]
-    a = ""
-    while a not in browsers:
+    driver_name = ""
+    while driver_name not in browsers:
         inp = input("Select browser: \n 1. firefox\n 2. chrome\n ::")
         if not inp.isdigit():
             print("Input must be number.")
@@ -125,13 +125,17 @@ def create_driver():
         if n not in [i+1 for i in range(0, len(browsers))]:
             print("Out of range number")
             continue
-        a = browsers[n-1]
-    if a == "firefox":
+        driver_name = browsers[n-1]
+    return driver_name
+
+
+def create_driver(driver_name):
+    if driver_name == "firefox":
         opts = firefox.options.Options()  # pyright:ignore
         opts.headless = True
         return webdriver.Firefox(service=firefox.service.Service(  # pyright:ignore
             GeckoDriverManager().install()), options=opts)
-    elif a == "chrome":
+    elif driver_name == "chrome":
         opts = chrome.options.Options()  # pyright:ignore
         opts.headless = True
         return webdriver.Chrome(service=chrome.service.Service(  # pyright:ignore
@@ -149,13 +153,16 @@ def get_pathes(filename):
     return (fullname, idsname)
 
 
-def process_url(url, filename):
-    print("Create driver...")
-    driver = create_driver()
-    print("Fetching data...")
-    page_soup = get_catalog_soup(url, driver)
-    print("Parse data...")
-    products = parse_soup(page_soup)
+def get_url_name(url: str) -> str:
+    url_path = urlparse(url).path
+    return os.path.basename(url_path)
+
+
+def process_url(url, filename, driver):
+    print(f"Fetching data for {filename}")
+    page_soup = get_page_soup(url, driver)
+    print(f"Parse data for {filename}...")
+    products = get_soup_products(page_soup)
     ids = [item["id"] for item in products]
     fullname, idsname = get_pathes(filename)
     print(f"Writing fulldata in {os.path.basename(fullname)}" +
@@ -164,11 +171,52 @@ def process_url(url, filename):
     dump_data(idsname, ids)
 
 
-def main():
+def category_process(url: str, driver):
+    n = 1
+    filename = get_url_name(url)
+    while True:
+        writename = f"{filename}_{n}"
+
+        print(f"Fetching data for {writename}...")
+        page_soup = get_page_soup(url, driver)
+
+        print(f"Parse data for {writename}...")
+        products = get_soup_products(page_soup)
+        ids = [item["id"] for item in products]
+        fullname, idsname = get_pathes(writename)
+
+        print(f"Writing fulldata in {os.path.basename(fullname)}" +
+              f" and only id's in {os.path.basename(idsname)}.")
+        dump_data(fullname, products)
+        dump_data(idsname, ids)
+
+        next_page = page_soup.find(
+            attrs={"class": "pagination-next pagination__next"})
+        if next_page is None:
+            break
+        url = next_page.attrs["href"]  # pyright:ignore
+        n+=1
+
+
+def parse_all_category_pages():
+    url = input("Enter wildberries catalog url: ")
+    driver = create_driver("firefox")
+    category_process(url, driver)
+
+
+def parse_page():
     url = input("Enter wildberries catalog url: ")
     filename = input("Enter filename: ")
-    process_url(url, filename)
+
+    print("Create driver...")
+    driver_name = select_driver_name()
+    driver = create_driver(driver_name)
+
+    process_url(url, filename, driver)
+
+    driver.close()
 
 
 if __name__ == "__main__":
-    main()
+    #  parse_page()
+    parse_all_category_pages()

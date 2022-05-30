@@ -3,12 +3,12 @@ import os
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
-from selenium.webdriver import firefox
-from selenium.webdriver import chrome
+from selenium.webdriver import firefox, chrome, opera
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.opera import OperaDriverManager
 from webdriver_manager.firefox import GeckoDriverManager
 from simple_term_menu import TerminalMenu
 
@@ -76,13 +76,15 @@ def get_soup_products(soup: BeautifulSoup):
 
 
 def select_driver_name() -> str:
-    options = ["[f] firefox", "[c] chrome"]
+    options = ["[f] firefox", "[c] chrome", "[o] opera"]
     terminal_menu = TerminalMenu(options)
     menu_entry_index = terminal_menu.show()
     if menu_entry_index == 0:
         return "firefox"
     elif menu_entry_index == 1:
         return "chome"
+    elif menu_entry_index == 2:
+        return "opera"
     return ""
 
 
@@ -97,6 +99,12 @@ def create_driver(driver_name: str):
         opts.headless = True
         return webdriver.Chrome(service=chrome.service.Service(  # pyright:ignore
             ChromeDriverManager().install()), options=opts)
+    elif driver_name == "opera":
+        opts = opera.options.Options()  # pyright:ignore
+        opts.headless = True
+        return webdriver.Opera(service=opera.service.Service(  # pyright:ignore
+            OperaDriverManager().install()), options=opts)
+
     raise Exception("Wrong driver_name")
 
 

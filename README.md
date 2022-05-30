@@ -37,3 +37,4 @@
 - Supported browsers is
   - Chrome
   - Firefox
+  - Opera

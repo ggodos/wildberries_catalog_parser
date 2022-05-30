@@ -2,3 +2,4 @@ beautifulsoup4
 selenium
 webdriver-manager
 lxml
+simple-term-menu

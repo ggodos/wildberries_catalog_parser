@@ -1,3 +1,7 @@
 *.log
 token.txt
 target/
+
+__pycache__/
+*.pyc
+venv*/

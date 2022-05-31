@@ -35,7 +35,8 @@ def parse_product_data(product: str):
 
     img = soup.find(name="img")
     if isinstance(img, bs4.element.Tag):
-        result["image"] = img.attrs["src"][2:]
+        img_url = f"https:{img.attrs['src']}"
+        result["image"] = img_url
 
     goods_name = soup.find(attrs={"class": "goods-name"})
     if isinstance(goods_name, bs4.element.Tag):

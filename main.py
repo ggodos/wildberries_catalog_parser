@@ -2,8 +2,9 @@ import os
 
 from src import core, utils, menu
 
+token_path = utils.get_main_path() + "/token.txt"
 
-with open("token.txt", "r") as fp:
+with open(token_path, "r") as fp:
     token = fp.read().strip()
     os.environ["GH_TOKEN"] = token
 

@@ -43,13 +43,15 @@ def dump_data(filename: str, data):
             json.dumps(data, ensure_ascii=False, sort_keys=True, indent=4)
         )
 
+def get_main_path():
+    return os.path.dirname(os.path.realpath(__main__.__file__))
 
 def get_pathes(filename: str):
     """
     return (fullname, idsname)
     """
     dump_directory = (
-        os.path.dirname(os.path.realpath(__main__.__file__)) + "/target/"
+         get_main_path() + "/target/"
     )
     if not os.path.exists(dump_directory):
         os.mkdir(dump_directory)

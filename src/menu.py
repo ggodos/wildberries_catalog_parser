@@ -13,7 +13,7 @@ def select_options(
             print("input is not digit")
             continue
         n = int(inp)
-        if n < 1 or n >= len(options):
+        if n < 1 or n > len(options):
             print("Input out of range")
             continue
         if answersCallable:

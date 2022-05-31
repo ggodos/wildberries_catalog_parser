@@ -1,7 +1,6 @@
 import os
-from src.core import create_driver, section_process, select_driver_name, process_url
-from simple_term_menu import TerminalMenu
-import src.utils as utils
+
+from src import core, utils, menu
 
 
 with open("token.txt", "r") as fp:
@@ -11,8 +10,8 @@ with open("token.txt", "r") as fp:
 
 def parse_section():
     url = input("Enter wildberries catalog url: ")
-    driver = create_driver("firefox")
-    section_process(url, driver)
+    driver = core.create_driver("firefox")
+    core.section_process(url, driver)
 
 
 def parse_page():
@@ -20,26 +19,34 @@ def parse_page():
     filename = utils.get_url_name(url)
 
     print("Create driver...")
-    driver_name = select_driver_name()
-    driver = create_driver(driver_name)
+    driver_name = core.select_driver_name()
+    if driver_name is None:
+        print("Quiting...")
+        return
+    driver = core.create_driver(driver_name)
 
-    process_url(url, filename, driver)
+    core.process_url(url, filename, driver)
 
     driver.close()
 
 
 def parse_links_file_sections(filepath: str = "links.txt"):
-    driver = create_driver("firefox")
+    driver = core.create_driver("firefox")
     with open(filepath, "r") as fp:
         for url in fp:
-            section_process(url.strip(), driver)
+            core.section_process(url.strip(), driver)
+
+
+def main():
+    options = ["1. one", "2. section"]
+    answers = [parse_page, parse_section]
+    menu.select_options(
+        options=options,
+        answers=answers,
+        startMsg="Choose type of parsing",
+        answersCallable=True,
+    )
 
 
 if __name__ == "__main__":
-    options = ["[o] one", "[s] section"]
-    simple_term_menu = TerminalMenu(options, title="What to parse")
-    menu_entry_index = simple_term_menu.show()
-    if menu_entry_index == 0:
-        parse_page()
-    elif menu_entry_index == 1:
-        parse_section()
+    main()

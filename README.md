@@ -8,7 +8,6 @@
 - beautifulsoup4
 - lxml
 - webdriver-manager
-- simple-term-menu
 
 ## Installation
 

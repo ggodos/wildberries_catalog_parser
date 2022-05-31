@@ -9,7 +9,7 @@ import __main__
 
 def prettify_price(inp_price) -> str:
     stripped_price = inp_price.strip()
-    price = ''.join([c if c in string.digits else '' for c in stripped_price])
+    price = "".join([c if c in string.digits else "" for c in stripped_price])
     return price + stripped_price[-1]
 
 
@@ -25,7 +25,7 @@ def prettify_old(old_price) -> str:
 def progress_bar_start(toolbar_width: int) -> None:
     sys.stdout.write("[%s]" % (" " * toolbar_width))
     sys.stdout.flush()
-    sys.stdout.write("\b" * (toolbar_width+1))
+    sys.stdout.write("\b" * (toolbar_width + 1))
 
 
 def progress_bar_cycle():
@@ -39,14 +39,18 @@ def progress_bar_end():
 
 def dump_data(filename: str, data):
     with open(filename, "w", encoding="utf-8") as fp:
-        fp.write(json.dumps(data, ensure_ascii=False, sort_keys=True, indent=4))
+        fp.write(
+            json.dumps(data, ensure_ascii=False, sort_keys=True, indent=4)
+        )
 
 
 def get_pathes(filename: str):
     """
     return (fullname, idsname)
     """
-    dump_directory = os.path.dirname(os.path.realpath(__main__.__file__)) + "/target/"
+    dump_directory = (
+        os.path.dirname(os.path.realpath(__main__.__file__)) + "/target/"
+    )
     if not os.path.exists(dump_directory):
         os.mkdir(dump_directory)
     filepath = f"{dump_directory}{filename}"

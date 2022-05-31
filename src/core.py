@@ -1,54 +1,66 @@
 import os
 
+import bs4
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
-from selenium.webdriver import firefox, chrome, opera
+from selenium.webdriver import chrome, firefox, opera
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
-from webdriver_manager.opera import OperaDriverManager
 from webdriver_manager.firefox import GeckoDriverManager
-from simple_term_menu import TerminalMenu
+from webdriver_manager.opera import OperaDriverManager
 
-import src.utils as utils
+from src import utils, menu
 
 
 def parse_product_data(product: str):
-    result = dict()
+    """parse_product_data.
+
+    :param product:
+    :type product: str
+    """
+    result = {}
+
     soup = BeautifulSoup(product, features="lxml")
 
     low_price = soup.find(attrs={"class": "lower-price"})
-    if low_price is not None:
-        result["current-price"] \
-            = utils.prettify_price(low_price.contents[0])  # type: ignore
+    if isinstance(low_price, bs4.element.Tag):
+        result["current-price"] = utils.prettify_price(low_price.contents[0])
 
     old_price = soup.find(attrs={"class": "price-old-block"})
-    if old_price is not None:
+    if isinstance(old_price, bs4.element.Tag):
         result["old-price"] = utils.prettify_old(old_price)
 
     img = soup.find(name="img")
-    if img is not None:
-        result["image"] = img.attrs["src"][2:]  # type: ignore
+    if isinstance(img, bs4.element.Tag):
+        result["image"] = img.attrs["src"][2:]
 
     goods_name = soup.find(attrs={"class": "goods-name"})
-    if goods_name is not None:
-        result["goods-name"] = \
-            (goods_name.contents[0]).strip()  # type: ignore
+    if isinstance(goods_name, bs4.element.Tag):
+        result["goods-name"] = str(goods_name.contents[0]).strip()
 
     brand_name = soup.find(attrs={"class": "brand-name"})
-    if brand_name is not None:
-        result["brand-name"] \
-            = (brand_name.contents[0]).strip()  # type: ignore
+    if isinstance(brand_name, bs4.element.Tag):
+        result["brand-name"] = str(brand_name.contents[0]).strip()
     return result
 
 
 def get_page_soup(url: str, driver, delay=10) -> BeautifulSoup:
+    """get_page_soup.
+
+    :param url:
+    :type url: str
+    :param driver:
+    :param delay:
+    :rtype: BeautifulSoup
+    """
     driver.get(url)
     try:
         WebDriverWait(driver, delay).until(
-            EC.element_to_be_clickable((By.ID, 'filters')))
+            EC.element_to_be_clickable((By.ID, "filters"))
+        )
     except TimeoutException:
         print("Timeout exception")
 
@@ -57,8 +69,14 @@ def get_page_soup(url: str, driver, delay=10) -> BeautifulSoup:
 
 
 def get_soup_products(soup: BeautifulSoup):
+    """get_soup_products.
+
+    :param soup:
+    :type soup: BeautifulSoup
+    """
     products = soup.find_all(
-        attrs={"class":  "product-card j-card-item j-good-for-listing-event"})
+        attrs={"class": "product-card j-card-item j-good-for-listing-event"}
+    )
 
     # start progress bar
     toolbar_width = len(products)
@@ -75,40 +93,69 @@ def get_soup_products(soup: BeautifulSoup):
     return data
 
 
-def select_driver_name() -> str:
-    options = ["[f] firefox", "[c] chrome", "[o] opera"]
-    terminal_menu = TerminalMenu(options)
-    menu_entry_index = terminal_menu.show()
-    if menu_entry_index == 0:
-        return "firefox"
-    elif menu_entry_index == 1:
-        return "chome"
-    elif menu_entry_index == 2:
-        return "opera"
-    return ""
+def select_driver_name():
+    """select_driver_name.
+
+    :rtype: str | None
+    """
+    while True:
+        options = ["1. firefox", "2. chrome", "3. opera"]
+        answers = ["firefox", "chrome", "opera"]
+        answer = menu.select_options(
+            options=options, answers=answers, startMsg="Select browser"
+        )
+        if answer is None:
+            print("error")
+        return answer
 
 
 def create_driver(driver_name: str):
+    """create_driver.
+
+    :param driver_name:
+    :type driver_name: str
+    """
     if driver_name == "firefox":
         opts = firefox.options.Options()  # pyright:ignore
         opts.headless = True
-        return webdriver.Firefox(service=firefox.service.Service(  # pyright:ignore
-            GeckoDriverManager().install()), options=opts)
-    elif driver_name == "chrome":
+        return webdriver.Firefox(  # pyright:ignore
+            service=firefox.service.Service(  # pyright:ignore
+                GeckoDriverManager().install()
+            ),
+            options=opts,
+        )
+    if driver_name == "chrome":
         opts = chrome.options.Options()  # pyright:ignore
         opts.headless = True
-        return webdriver.Chrome(service=chrome.service.Service(  # pyright:ignore
-            ChromeDriverManager().install()), options=opts)
-    elif driver_name == "opera":
+        return webdriver.Chrome(  # pyright:ignore
+            service=chrome.service.Service(  # pyright:ignore
+                ChromeDriverManager().install()
+            ),
+            options=opts,
+        )
+    if driver_name == "opera":
         opts = opera.options.Options()  # pyright:ignore
         opts.headless = True
-        return webdriver.Opera(service=opera.service.Service(  # pyright:ignore
-            OperaDriverManager().install()), options=opts)
+        return webdriver.Opera(  # pyright:ignore
+            service=opera.service.Service(  # pyright:ignore
+                OperaDriverManager().install()
+            ),
+            options=opts,
+        )
 
     raise Exception("Wrong driver_name")
 
 
 def process_url(url: str, filename: str, driver, silent=False):
+    """process_url.
+
+    :param url:
+    :type url: str
+    :param filename:
+    :type filename: str
+    :param driver:
+    :param silent:
+    """
     if not silent:
         print(f"Fetching data for {filename}")
     page_soup = get_page_soup(url, driver)
@@ -128,10 +175,17 @@ def process_url(url: str, filename: str, driver, silent=False):
 
 
 def section_process(url: str, driver, silent=False):
-    n = 1
+    """section_process.
+
+    :param url:
+    :type url: str
+    :param driver:
+    :param silent:
+    """
+    filename_number = 1
     filename = utils.get_url_name(url)
     while True:
-        writename = f"{filename}_{n}"
+        writename = f"{filename}_{filename_number}"
         if not silent:
             print(f"Fetching data for {writename}...")
         page_soup = get_page_soup(url, driver)
@@ -143,14 +197,17 @@ def section_process(url: str, driver, silent=False):
         fullname, idsname = utils.get_pathes(writename)
 
         if not silent:
-            print(f"Writing fulldata in {os.path.basename(fullname)}" +
-                  f" and only id's in {os.path.basename(idsname)}.")
+            print(
+                f"Writing fulldata in {os.path.basename(fullname)}"
+                + f" and only id's in {os.path.basename(idsname)}."
+            )
         utils.dump_data(fullname, products)
         utils.dump_data(idsname, ids)
 
         next_page = page_soup.find(
-            attrs={"class": "pagination-next pagination__next"})
+            attrs={"class": "pagination-next pagination__next"}
+        )
         if next_page is None:
             break
         url = next_page.attrs["href"]  # pyright:ignore
-        n += 1
+        filename_number += 1

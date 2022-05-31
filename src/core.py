@@ -135,13 +135,10 @@ def create_driver(driver_name: str):
             options=opts,
         )
     if driver_name == "opera":
-        opts = opera.options.Options()  # pyright:ignore
+        opts = chrome.options.Options()  # pyright:ignore
         opts.headless = True
         return webdriver.Opera(  # pyright:ignore
-            service=opera.service.Service(  # pyright:ignore
-                OperaDriverManager().install()
-            ),
-            options=opts,
+            executable_path=OperaDriverManager().install(), options=opts
         )
 
     raise Exception("Wrong driver_name")

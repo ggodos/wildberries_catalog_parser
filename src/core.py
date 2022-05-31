@@ -4,13 +4,14 @@ import bs4
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
-from selenium.webdriver import chrome, firefox, opera
+from selenium.webdriver import chrome, firefox
+from selenium.webdriver.chrome import options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.firefox import GeckoDriverManager
-from webdriver_manager.opera import OperaDriverManager
+from webdriver_manager.core.utils import ChromeType
 
 from src import utils, menu
 
@@ -100,8 +101,8 @@ def select_driver_name():
     :rtype: str | None
     """
     while True:
-        options = ["1. firefox", "2. chrome", "3. opera"]
-        answers = ["firefox", "chrome", "opera"]
+        options = ["1. brave", "2. firefox", "3. chrome"]
+        answers = ["brave", "firefox", "chrome"]
         answer = menu.select_options(
             options=options, answers=answers, startMsg="Select browser"
         )
@@ -116,31 +117,29 @@ def create_driver(driver_name: str):
     :param driver_name:
     :type driver_name: str
     """
-    if driver_name == "firefox":
-        opts = firefox.options.Options()  # pyright:ignore
+    if driver_name == "brave":
+        opts = webdriver.ChromeOptions()
         opts.headless = True
-        return webdriver.Firefox(  # pyright:ignore
-            service=firefox.service.Service(  # pyright:ignore
-                GeckoDriverManager().install()
+        return webdriver.Chrome(
+            service=chrome.service.Service(
+                ChromeDriverManager(chrome_type=ChromeType.BRAVE).install()
             ),
+            options=opts,
+        )
+    if driver_name == "firefox":
+        opts = firefox.options.Options()
+        opts.headless = True
+        return webdriver.Firefox(
+            service=firefox.service.Service(GeckoDriverManager().install()),
             options=opts,
         )
     if driver_name == "chrome":
-        opts = chrome.options.Options()  # pyright:ignore
+        opts = webdriver.ChromeOptions()
         opts.headless = True
-        return webdriver.Chrome(  # pyright:ignore
-            service=chrome.service.Service(  # pyright:ignore
-                ChromeDriverManager().install()
-            ),
+        return webdriver.Chrome(
+            service=chrome.service.Service(ChromeDriverManager().install()),
             options=opts,
         )
-    if driver_name == "opera":
-        opts = chrome.options.Options()  # pyright:ignore
-        opts.headless = True
-        return webdriver.Opera(  # pyright:ignore
-            executable_path=OperaDriverManager().install(), options=opts
-        )
-
     raise Exception("Wrong driver_name")
 
 

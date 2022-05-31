@@ -13,7 +13,7 @@
 
 ---
 
-`pip install -r requirements.txt`
+    pip install -r requirements.txt
 
 ## Usage
 
@@ -26,14 +26,14 @@
    - section - parse url and select next page while can
 1. Enter start url
 1. Choose browser
-1. Wait
+1. Enjoy
 
 ## Info
 
 ---
 
 - All data saved in `target` directory
-- Supported browsers is
+- List of supported browsers:
+  - Brave
   - Chrome
   - Firefox
-  - Opera

@@ -101,10 +101,10 @@ def select_driver_name():
     :rtype: str | None
     """
     while True:
-        options = ["1. brave", "2. firefox", "3. chrome"]
+        opts = ["brave", "firefox", "chrome"]
         answers = ["brave", "firefox", "chrome"]
         answer = menu.select_options(
-            options=options, answers=answers, startMsg="Select browser"
+            options=opts, answers=answers, startMsg="Select browser"
         )
         if answer is None:
             print("error")

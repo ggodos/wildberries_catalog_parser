@@ -39,7 +39,7 @@ def parse_links_file_sections(filepath: str = "links.txt"):
 
 
 def main():
-    options = ["1. one", "2. section"]
+    options = ["one", "section"]
     answers = [parse_page, parse_section]
     menu.select_options(
         options=options,

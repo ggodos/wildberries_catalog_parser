@@ -4,9 +4,9 @@ def select_options(
     while True:
         if startMsg != "":
             print(startMsg)
-        for option in options:
-            print(f"\t{option}")
-        inp = input("Enter::")
+        for idx, option in enumerate(options):
+            print(f"  {idx+1}. {option}")
+        inp = input("> ")
         if inp == "q" or inp == "quit":
             return None
         if not inp.isdigit():
